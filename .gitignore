@@ -1,0 +1,11 @@
+bin/
+obj/
+/packages/
+
+# User-specific files (JetBrains Rider)
+.idea/
+*.sln.iml
+riderModule.iml
+/_ReSharper.Caches/
+.DS_store
+*.DotSettings.user
