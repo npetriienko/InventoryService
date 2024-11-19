@@ -1,11 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Reflection;
 using System.Text;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using InventoryService.Data;
 using InventoryService.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Xunit.Abstractions;
 
@@ -14,7 +17,48 @@ namespace InventoryService.Tests;
 public class InventoryControllerTests(WebApplicationFactory<Program> factory, ITestOutputHelper output) 
     : IClassFixture<WebApplicationFactory<Program>>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.WithWebHostBuilder(builder =>
+    {
+        builder.ConfigureServices(services =>
+        {
+            // Remove the existing DbContext registration
+            var descriptor = services.SingleOrDefault(
+                d => d.ServiceType == typeof(DbContextOptions<InventoryContext>));
+            if (descriptor != null)
+            {
+                services.Remove(descriptor);
+            }
+
+            // Add DbContext using an in-memory database for testing
+            services.AddDbContext<InventoryContext>(options =>
+            {
+                options.UseInMemoryDatabase("InMemoryDbForTesting");
+            });
+
+            // Build the service provider
+            var serviceProvider = services.BuildServiceProvider();
+
+            // Create a scope to obtain a reference to the database context
+            using (var scope = serviceProvider.CreateScope())
+            {
+                var scopedServices = scope.ServiceProvider;
+                var db = scopedServices.GetRequiredService<InventoryContext>();
+
+                // Ensure the database is created
+                db.Database.EnsureCreated();
+
+                // Seed the database with test data if not already seeded
+                var contextType = typeof(InventoryContext);
+                var methodInfo = contextType.GetMethod(
+                    "OnModelCreating",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+
+                if (methodInfo != null) return;
+                db.Items.AddRange(SeedingData.Items);
+                db.SaveChanges();
+            }
+        });
+    }).CreateClient();
 
     [Fact]
     public async Task GetItems_AllStoredItems_ItemsReturnedAsync()
