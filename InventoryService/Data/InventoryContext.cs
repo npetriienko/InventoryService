@@ -20,31 +20,6 @@ public class InventoryContext(DbContextOptions<InventoryContext> options, IConfi
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<ItemModel>().HasData(
-            new ItemModel
-            {
-                Id = 1,
-                Title = "Item 1",
-                Description = "Description for Item 1",
-                Price = 10.99m,
-                Quantity = 5
-            },
-            new ItemModel
-            {
-                Id = 2,
-                Title = "Item 2",
-                Description = "Description for Item 2",
-                Price = 15.99m,
-                Quantity = 10
-            },
-            new ItemModel
-            {
-                Id = 3,
-                Title = "Item 3",
-                Description = "Description for Item 3",
-                Price = 20.99m,
-                Quantity = 15
-            }
-        );
+        modelBuilder.Entity<ItemModel>().HasData(SeedingData.Items);
     }
 }
