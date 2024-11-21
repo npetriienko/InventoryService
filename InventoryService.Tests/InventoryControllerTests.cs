@@ -78,7 +78,7 @@ public class InventoryControllerTests(WebApplicationFactory<Program> factory, IT
     }
     
     [Fact]
-    public async Task GetItemsById_SeededData_ItemReturnedAsync()
+    public async Task GetItemById_ExistingItem_ItemReturnedAsync()
     {
         // Arrange
         var itemId = 1;
@@ -94,8 +94,22 @@ public class InventoryControllerTests(WebApplicationFactory<Program> factory, IT
             var item = await response.Content.ReadFromJsonAsync<ItemModel>();
             
             item.Should().NotBeNull();
-            item.Should().BeEquivalentTo(SeedingData.Items.First(i => i.Id == itemId));
+            item.Should().BeEquivalentTo(SeedingData.Items
+                .First(i => i.Id == itemId));
         }
+    }
+    
+    [Fact]
+    public async Task TryGetItemsById_NonExistingItem_ItemNotFoundAsync()
+    {
+        // Arrange
+        var itemId = 1000;
+        
+        // Act
+        var response = await _client.GetAsync($"/api/items/{itemId}");
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
     
     [Fact]
@@ -124,7 +138,100 @@ public class InventoryControllerTests(WebApplicationFactory<Program> factory, IT
             var item = await response.Content.ReadFromJsonAsync<ItemModel>();
             
             item.Should().NotBeNull();
-            item.Should().BeEquivalentTo(newItem, options => options.Excluding(i => i.Id));
+            item.Should().BeEquivalentTo(newItem, options => 
+                options.Excluding(i => i.Id));
         }
+    }
+    
+    [Fact]
+    public async Task UpdateItem_ExistingItem_ItemUpdatedAsync()
+    {
+        // Arrange
+        var itemId = 2;
+        var updatedItem = new ItemModel
+        {
+            Title = "Updated Item",
+            Description = "Updated Description",
+            Price = 10.99m,
+            Quantity = 5
+        };
+
+        var content = new StringContent(
+            JsonConvert.SerializeObject(updatedItem),
+            Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await _client.PutAsync($"/api/items/{itemId}", content);
+
+        // Assert
+        using (new AssertionScope())
+        {
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            var item = await response.Content.ReadFromJsonAsync<ItemModel>();
+
+            item.Should().NotBeNull();
+            item.Should().BeEquivalentTo(updatedItem, options => 
+                options.Excluding(i => i.Id));
+        }
+    }
+    
+    [Fact]
+    public async Task TryUpdateItem_NonExistingItem_ItemNotFoundAsync()
+    {
+        // Arrange
+        var itemId = 100;
+        var updatedItem = new ItemModel
+        {
+            Title = "Updated Item",
+            Description = "Updated Description",
+            Price = 10.99m,
+            Quantity = 5
+        };
+
+        var content = new StringContent(
+            JsonConvert.SerializeObject(updatedItem),
+            Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await _client.PutAsync($"/api/items/{itemId}", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteItem_ExistingItem_ItemDeletedAsync()
+    {
+        // Arrange
+        var itemId = 3;
+
+        // Act
+        var response = await _client.DeleteAsync($"/api/items/{itemId}");
+        
+        // Assert
+        using (new AssertionScope())
+        {
+            response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        
+            var getItemResponse = await _client.GetAsync($"/api/items/{itemId}");
+            getItemResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+        
+    }
+
+    [Fact]
+    public async Task TryDeleteItem_NonExistingItem_ItemNotFoundAsync()
+    {
+        // Arrange
+        var itemId = 100;
+
+        // Act
+        var response = await _client.DeleteAsync($"/api/items/{itemId}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 }
