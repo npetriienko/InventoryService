@@ -6,6 +6,7 @@ using FluentAssertions;
 using FluentAssertions.Execution;
 using InventoryService.Data;
 using InventoryService.Models;
+using InventoryService.Tests.Builders;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -116,12 +117,8 @@ public class InventoryControllerTests(WebApplicationFactory<Program> factory, IT
     public async Task CreateItems_NewItem_ItemCreatedAsync()
     {
         // Arrange
-        var newItem = new ItemModel
-        {
-            Title = "New Item",
-            Description = "New Description",
-            Price = 5.99m, Quantity = 10
-        };
+        var newItem = new ItemBuilder()
+            .Build();
         
         var content = new StringContent(
             JsonConvert.SerializeObject(newItem), 
@@ -148,13 +145,8 @@ public class InventoryControllerTests(WebApplicationFactory<Program> factory, IT
     {
         // Arrange
         var itemId = 2;
-        var updatedItem = new ItemModel
-        {
-            Title = "Updated Item",
-            Description = "Updated Description",
-            Price = 10.99m,
-            Quantity = 5
-        };
+        var updatedItem = new ItemBuilder()
+            .Build();
 
         var content = new StringContent(
             JsonConvert.SerializeObject(updatedItem),
